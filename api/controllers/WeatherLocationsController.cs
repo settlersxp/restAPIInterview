@@ -7,9 +7,15 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using api.Data;
 using api.Models;
+using api.DTOs.WeatherLocations;
+using api.Mappers;
 
 namespace api.controllers
 {
+
+    [Route("api/[controller]")]
+    [ApiController]
+
     public class WeatherLocationsController : Controller
     {
         private readonly apiContext _context;
@@ -19,73 +25,52 @@ namespace api.controllers
             _context = context;
         }
 
-        // GET: WeatherLocations
-        public async Task<IActionResult> Index()
+        [HttpGet(Name = "Get all weather entries")]
+        public async Task<ActionResult<List<SmallerDto>>> GetAllWeatherEntries()
         {
-            return View(await _context.WeatherLocation.ToListAsync());
+            var existingLocations = _context.WeatherLocation.ToList().Select(s=> s.ToSmallerDto());
+
+            return Ok(existingLocations);
         }
 
-        // GET: WeatherLocations/Details/5
-        public async Task<IActionResult> Details(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
 
+        [HttpGet("{id}", Name = "Get weather entry")]
+        public async Task<ActionResult<WeatherLocation>> GetWeatherEntry([FromRoute] int id)
+        {
             var weatherLocation = await _context.WeatherLocation
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (weatherLocation == null)
             {
-                return NotFound();
+                return NotFound("Weather entry not found");
             }
 
-            return View(weatherLocation);
+            return Ok(weatherLocation);
         }
 
-        // GET: WeatherLocations/Create
-        public IActionResult Create()
-        {
-            return View();
-        }
 
         // POST: WeatherLocations/Create
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Date,TemperatureC,Summary,TemperatureF")] WeatherLocation weatherLocation)
+        [HttpPost(Name = "Create a new weather location")]
+        public async Task<ActionResult<SmallerDto>> CreateWeatherLocation([FromBody] SmallerDto weatherLocation)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                _context.Add(weatherLocation);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
-            }
-            return View(weatherLocation);
-        }
-
-        // GET: WeatherLocations/Edit/5
-        public async Task<IActionResult> Edit(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
+                return BadRequest("Invalid weather model");
             }
 
-            var weatherLocation = await _context.WeatherLocation.FindAsync(id);
-            if (weatherLocation == null)
-            {
-                return NotFound();
-            }
-            return View(weatherLocation);
+            var newWeatherLocation = weatherLocation.ToModelWithSummary();
+
+             _context.WeatherLocation.Add(newWeatherLocation);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(GetWeatherEntry), new { id = newWeatherLocation.Id }, newWeatherLocation.ToSmallerDto());
         }
 
         // POST: WeatherLocations/Edit/5
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
+        [HttpPatch("{id}")]
         public async Task<IActionResult> Edit(int id, [Bind("Id,Date,TemperatureC,Summary,TemperatureF")] WeatherLocation weatherLocation)
         {
             if (id != weatherLocation.Id)
@@ -117,6 +102,7 @@ namespace api.controllers
         }
 
         // GET: WeatherLocations/Delete/5
+        [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -131,23 +117,12 @@ namespace api.controllers
                 return NotFound();
             }
 
-            return View(weatherLocation);
-        }
-
-        // POST: WeatherLocations/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
-        {
-            var weatherLocation = await _context.WeatherLocation.FindAsync(id);
-            if (weatherLocation != null)
-            {
-                _context.WeatherLocation.Remove(weatherLocation);
-            }
-
+            _context.WeatherLocation.Remove(weatherLocation);
             await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+
+            return Ok(weatherLocation);
         }
+
 
         private bool WeatherLocationExists(int id)
         {
