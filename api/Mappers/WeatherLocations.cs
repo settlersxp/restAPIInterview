@@ -13,7 +13,7 @@
             };
         }
 
-        public static Models.WeatherLocation ToModelWithSummary(this DTOs.WeatherLocations.SmallerDto weatherLocation)
+        public static Models.WeatherLocation ToModelWithSummary(this DTOs.WeatherLocations.CreateWithoutId weatherLocation)
         {
             // do some logic in here
             if(weatherLocation.TemperatureC == 0 && weatherLocation.TemperatureF == 0)
