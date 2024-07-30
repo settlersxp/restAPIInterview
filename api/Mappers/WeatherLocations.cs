@@ -16,7 +16,7 @@
         public static Models.WeatherLocation ToModelWithSummary(this DTOs.WeatherLocations.CreateWithoutId weatherLocation)
         {
             // do some logic in here
-            if(weatherLocation.TemperatureC == 0 && weatherLocation.TemperatureF == 0)
+            if(weatherLocation.TemperatureC != 0 && weatherLocation.TemperatureF == 0)
             {
                 weatherLocation.TemperatureF = weatherLocation.TemperatureC * 9 / 5 + 32;
             }

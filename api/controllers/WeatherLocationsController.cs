@@ -1,14 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Mvc;
 using api.Data;
-using api.Models;
 using api.DTOs.WeatherLocations;
-using api.Mappers;
+using api.Interfaces;
 
 namespace api.controllers
 {
@@ -19,26 +12,27 @@ namespace api.controllers
     public class WeatherLocationsController : Controller
     {
         private readonly apiContext _context;
+        private readonly IWeatherLocationsRepository _weatherRepo;
 
-        public WeatherLocationsController(apiContext context)
+        public WeatherLocationsController(apiContext context, IWeatherLocationsRepository weatherRepo)
         {
             _context = context;
+            _weatherRepo = weatherRepo;
         }
 
         [HttpGet(Name = "Get all weather entries")]
-        public async Task<ActionResult<List<SmallerDto>>> GetAllWeatherEntries()
+        public async Task<ActionResult<List<SmallerDto>>> GetAll()
         {
-            var existingLocations = _context.WeatherLocation.ToList().Select(s=> s.ToSmallerDto());
+            var existingLocations = await _weatherRepo.GetAllAsync();
 
             return Ok(existingLocations);
         }
 
 
         [HttpGet("{id}", Name = "Get weather entry")]
-        public async Task<ActionResult<WeatherLocation>> GetWeatherEntry([FromRoute] int id)
+        public async Task<IActionResult> Get([FromRoute] int id)
         {
-            var weatherLocation = await _context.WeatherLocation
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var weatherLocation = await _weatherRepo.GetByIdAsync(id);
             if (weatherLocation == null)
             {
                 return NotFound("Weather entry not found");
@@ -49,56 +43,45 @@ namespace api.controllers
 
 
         // POST: WeatherLocations/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost(Name = "Create a new weather location")]
-        public async Task<ActionResult<SmallerDto>> CreateWeatherLocation([FromBody] SmallerDto weatherLocation)
+        public async Task<IActionResult> Create([FromBody] CreateWithoutId weatherLocation, IWeatherLocationsRepository _weatherRepo)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest("Invalid weather model");
             }
 
-            var newWeatherLocation = weatherLocation.ToModelWithSummary();
+            SmallerDto? newLocation = await _weatherRepo.CreateAsync(weatherLocation);
+            if (newLocation == null)
+            {
+                return BadRequest("Could not save the location");
+            }
 
-             _context.WeatherLocation.Add(newWeatherLocation);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetWeatherEntry), new { id = newWeatherLocation.Id }, newWeatherLocation.ToSmallerDto());
+            return Ok(newLocation);
         }
 
-        // POST: WeatherLocations/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+
         [HttpPatch("{id}")]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Date,TemperatureC,Summary,TemperatureF")] WeatherLocation weatherLocation)
+        public async Task<IActionResult> Update(int id, [Bind("Id,Date,TemperatureC,Summary,TemperatureF")] AllColumns weatherLocation)
         {
             if (id != weatherLocation.Id)
             {
                 return NotFound();
             }
 
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                try
-                {
-                    _context.Update(weatherLocation);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!WeatherLocationExists(weatherLocation.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
+                return BadRequest("Invalid weather model");
             }
-            return View(weatherLocation);
+
+            SmallerDto? updatedLocation = await _weatherRepo.UpdateAsync(id, weatherLocation);
+
+            if (updatedLocation == null)
+            {
+                return NotFound("Weather entry not found");
+            }
+
+            return Ok(updatedLocation);
         }
 
         // GET: WeatherLocations/Delete/5
@@ -110,23 +93,13 @@ namespace api.controllers
                 return NotFound();
             }
 
-            var weatherLocation = await _context.WeatherLocation
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var weatherLocation = await _weatherRepo.DeleteAsync(id.Value);
             if (weatherLocation == null)
             {
                 return NotFound();
             }
 
-            _context.WeatherLocation.Remove(weatherLocation);
-            await _context.SaveChangesAsync();
-
             return Ok(weatherLocation);
-        }
-
-
-        private bool WeatherLocationExists(int id)
-        {
-            return _context.WeatherLocation.Any(e => e.Id == id);
         }
     }
 }

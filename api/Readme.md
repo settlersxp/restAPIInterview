@@ -3,6 +3,12 @@
 2. Check the migration file
 3. Update-Database
 
+or:
+dotnet tool install --global dotnet-ef
+
+1. dotnet ef migrations add initial
+2. dotnet ef database update
+
 
 # TODOs:
 1. Remove the id from the saving DTO - (done)
