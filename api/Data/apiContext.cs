@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using api.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 
 namespace api.Data
 {
@@ -16,5 +13,14 @@ namespace api.Data
         }
 
         public DbSet<api.Models.WeatherLocation> WeatherLocation { get; set; } = default!;
+
+        protected override void OnModelCreating(ModelBuilder builder)
+        {
+            base.OnModelCreating(builder);
+
+            List<IdentityRole> roles = new List<IdentityRole>();
+            roles.Add(new IdentityRole { Name = "Admin", NormalizedName = "ADMIN" });
+            roles.Add(new IdentityRole { Name = "User", NormalizedName = "USER" });
+        }
     }
 }

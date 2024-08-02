@@ -9,14 +9,12 @@ namespace api.controllers
     [Route("api/[controller]")]
     [ApiController]
 
-    public class WeatherLocationsController : Controller
+    public class WeatherLocationsController : ControllerBase
     {
-        private readonly apiContext _context;
         private readonly IWeatherLocationsRepository _weatherRepo;
 
-        public WeatherLocationsController(apiContext context, IWeatherLocationsRepository weatherRepo)
+        public WeatherLocationsController(IWeatherLocationsRepository weatherRepo)
         {
-            _context = context;
             _weatherRepo = weatherRepo;
         }
 
