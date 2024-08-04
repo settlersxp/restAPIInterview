@@ -1,4 +1,5 @@
 using api.Data;
+using api.Hubs;
 using api.Interfaces;
 using api.Models;
 using api.Repository;
@@ -79,6 +80,7 @@ builder.Services.AddAuthentication(options =>
     );
 builder.Services.AddScoped<ITokenService, TokenService>();
 
+builder.Services.AddSignalR();
 
 var app = builder.Build();
 
@@ -95,4 +97,5 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<WeatherHub>("/weatherhub");
 app.Run();

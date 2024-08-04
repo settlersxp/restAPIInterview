@@ -55,6 +55,7 @@ namespace api.Controllers
             }
         }
 
+        [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto loginDto) {
             try
             {
