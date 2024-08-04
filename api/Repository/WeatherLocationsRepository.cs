@@ -7,15 +7,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace api.Repository
 {
-    public class WeatherLocationsRepository : IWeatherLocationsRepository
+    public class WeatherLocationsRepository(apiContext context) : IWeatherLocationsRepository
     {
-        private readonly apiContext _context;
-
-        public WeatherLocationsRepository(apiContext context)
-        {
-            _context = context;
-        }
-
+        private readonly apiContext _context = context;
 
         public Task<List<WeatherLocation>> GetAllAsync()
         {

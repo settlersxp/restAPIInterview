@@ -4,24 +4,21 @@ using api.Interfaces;
 using api.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class UsersController : ControllerBase
+    public class UsersController(
+        UserManager<AppUser> userManager,
+        SignInManager<AppUser> signInManager,
+        ITokenService tokenService
+            ) : ControllerBase
     {
-        private readonly UserManager<AppUser> _userManager;
-        private readonly ITokenService _tokenService;
-
-        public UsersController(
-            UserManager<AppUser> userManager, 
-            ITokenService tokenService
-            )
-        {
-            _userManager = userManager;
-            _tokenService = tokenService;
-        }
+        private readonly UserManager<AppUser> _userManager = userManager;
+        private readonly ITokenService _tokenService = tokenService;
+        private readonly SignInManager<AppUser> _signInManager = signInManager;
 
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDto registerDto) {
@@ -52,6 +49,30 @@ namespace api.Controllers
                     Username = newUser.UserName,
                     Email = newUser.Email,
                     Token = _tokenService.CreateToken(newUser)
+                });
+            } catch (Exception e) {
+                return BadRequest(e.Message);
+            }
+        }
+
+        public async Task<IActionResult> Login([FromBody] LoginDto loginDto) {
+            try
+            {
+                var user = await _userManager.Users.FirstOrDefaultAsync(u => u.Email == loginDto.Email);
+                if (user == null) {
+                    return Unauthorized("Invalid email");
+                }
+
+                //"true" for lockout might be useful for bypasses when wrong user is entered
+                var passwordCheck = await _signInManager.CheckPasswordSignInAsync(user, loginDto.Password, false);
+                if (!passwordCheck.Succeeded) {
+                    return Unauthorized("Invalid username");
+                }
+
+                return Ok(new NewUserDto {  
+                    Username = user.UserName,
+                    Email = user.Email,
+                    Token = _tokenService.CreateToken(user)
                 });
             } catch (Exception e) {
                 return BadRequest(e.Message);

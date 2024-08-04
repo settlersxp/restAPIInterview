@@ -2,6 +2,7 @@
 using api.Data;
 using api.DTOs.WeatherLocations;
 using api.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 
 namespace api.controllers
 {
@@ -9,14 +10,9 @@ namespace api.controllers
     [Route("api/[controller]")]
     [ApiController]
 
-    public class WeatherLocationsController : ControllerBase
+    public class WeatherLocationsController(IWeatherLocationsRepository weatherRepo) : ControllerBase
     {
-        private readonly IWeatherLocationsRepository _weatherRepo;
-
-        public WeatherLocationsController(IWeatherLocationsRepository weatherRepo)
-        {
-            _weatherRepo = weatherRepo;
-        }
+        private readonly IWeatherLocationsRepository _weatherRepo = weatherRepo;
 
         [HttpGet(Name = "Get all weather entries")]
         public async Task<ActionResult<List<SmallerDto>>> GetAll()
@@ -42,6 +38,7 @@ namespace api.controllers
 
         // POST: WeatherLocations/Create
         [HttpPost(Name = "Create a new weather location")]
+        [Authorize]
         public async Task<IActionResult> Create([FromBody] CreateWithoutId weatherLocation, IWeatherLocationsRepository _weatherRepo)
         {
             if (!ModelState.IsValid)
@@ -60,6 +57,7 @@ namespace api.controllers
 
 
         [HttpPatch("{id}")]
+        [Authorize]
         public async Task<IActionResult> Update(int id, [Bind("Id,Date,TemperatureC,Summary,TemperatureF")] AllColumns weatherLocation)
         {
             if (id != weatherLocation.Id)
@@ -84,6 +82,7 @@ namespace api.controllers
 
         // GET: WeatherLocations/Delete/5
         [HttpDelete("{id}")]
+        [Authorize]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
